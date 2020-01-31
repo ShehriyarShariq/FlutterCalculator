@@ -9,6 +9,10 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     SystemChrome.setEnabledSystemUIOverlays([]);
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp, 
+      DeviceOrientation.portraitDown
+    ]);
 
     return MaterialApp(
       title: 'Calculator',
