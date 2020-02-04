@@ -9,10 +9,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     SystemChrome.setEnabledSystemUIOverlays([]);
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp, 
-      DeviceOrientation.portraitDown
-    ]);
+    SystemChrome.setPreferredOrientations(
+        [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
 
     return MaterialApp(
       title: 'Calculator',
@@ -31,35 +29,21 @@ class Calculator extends StatefulWidget {
 }
 
 class CalculatorState extends State<Calculator> {
-  String equation = "0"; // expression
-  String result = "0"; // final result
+  String equation = "0", result = "0"; // Expression and FinalResult
+  Map<String, String> operatorsMap = {"÷": "/", "×": "*", "−": "-", "+": "+"};
 
-  evaluateEquation() {
+  void evaluateEquation() {
     try {
-      Parser p = new Parser();
-
       // Fix equation
-      String eq = equation.replaceAll("×", "*");
-      eq = eq.replaceAll("÷", "/");
-      eq = eq.replaceAll("−", "-");
-      eq = eq.replaceAll("+", "+");
-      Expression exp = p.parse(eq);
+      Expression exp = (Parser()).parse(operatorsMap.entries.fold(
+          equation, (prev, elem) => prev.replaceAll(elem.key, elem.value)));
 
-      ContextModel cm = ContextModel();
-      double res = exp.evaluate(EvaluationType.REAL, cm);
-      String resStr = res.toString();
+      double res = double.parse(
+          exp.evaluate(EvaluationType.REAL, ContextModel()).toString());
 
-      // Check if decimal can be written as integer
-      if (resStr.indexOf(".") != -1) {
-        String decimalPart = resStr.substring(resStr.indexOf(".") + 1);
-        if (decimalPart == "0") {
-          resStr = resStr.substring(0, resStr.indexOf("."));
-        } else if (decimalPart.length > 4) {
-          resStr = resStr.substring(0, resStr.indexOf(".") + 4);
-        }
-      }
-
-      result = resStr;
+      result = double.parse(res.toString()) == int.parse(res.toStringAsFixed(0))
+          ? res.toStringAsFixed(0)
+          : res.toStringAsFixed(4);
     } catch (e) {
       result = "Error";
     }
@@ -67,45 +51,18 @@ class CalculatorState extends State<Calculator> {
 
   buttonPressed(String text, bool isClear) {
     setState(() {
-      if ((text == "×") && isClear) {
-        equation = "0";
-        result = "0";
+      if (isClear) {
+        equation = result = "0";
       } else if (text == "⌫") {
         equation = equation.substring(0, equation.length - 1);
-        if (equation == "") {
-          equation = "0";
-          result = "0";
-        }
-
-        String lastChar = equation.substring(equation.length - 1);
-
-        // If last character is not an operator
-        if (!((lastChar == "÷") ||
-            (lastChar == "×") ||
-            (lastChar == "−") ||
-            (lastChar == "+"))) {
-          evaluateEquation();
-        }
+        if (equation == "") equation = result = "0";
       } else {
-        if (equation == "0" && text != ".") {
-          // 0.something...
-          equation = text;
-        } else {
-          if (equation == "0" && text == "0") {
-            equation = "";
-          }
-
-          equation += text;
-        }
-
-        // If new character not and operator
-        if (!((text == "÷") ||
-            (text == "×") ||
-            (text == "−") ||
-            (text == "+"))) {
-          evaluateEquation();
-        }
+        if (equation == "0" && text != ".") equation = "";
+        equation += text;
       }
+
+      if (!operatorsMap.containsKey(equation.substring(equation.length - 1)))
+        evaluateEquation();
     });
   }
 
