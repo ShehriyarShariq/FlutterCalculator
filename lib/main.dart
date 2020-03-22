@@ -1,11 +1,26 @@
+/* 
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * * * * * * * * * FLUTTER FLEX CALCULATOR * * * * * * * * *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * * * * * * * * * AUTHOR:SHEHRIYAR SHARIQ * * * * * * * * * 
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * * * * REQUIRES MATH_EXPRESSIONS PACKAGE TO FUNCTION * * *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ */
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:math_expressions/math_expressions.dart';
 
-void main() => runApp(MyApp());
+void main() => runApp(MyApp()); // App Entry Point
 
 class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     SystemChrome.setEnabledSystemUIOverlays([]);
@@ -31,6 +46,24 @@ class Calculator extends StatefulWidget {
 class CalculatorState extends State<Calculator> {
   String equation = "0", result = "0"; // Expression and FinalResult
   Map<String, String> operatorsMap = {"÷": "/", "×": "*", "−": "-", "+": "+"};
+  List buttonNames = [
+    "7",
+    "8",
+    "9",
+    "÷",
+    "4",
+    "5",
+    "6",
+    "×",
+    "1",
+    "2",
+    "3",
+    "−",
+    "0",
+    ".",
+    "⌫",
+    "+"
+  ];
 
   void evaluateEquation() {
     try {
@@ -41,6 +74,7 @@ class CalculatorState extends State<Calculator> {
       double res = double.parse(
           exp.evaluate(EvaluationType.REAL, ContextModel()).toString());
 
+      // Output correction for decimal results
       result = double.parse(res.toString()) == int.parse(res.toStringAsFixed(0))
           ? res.toStringAsFixed(0)
           : res.toStringAsFixed(4);
@@ -49,44 +83,118 @@ class CalculatorState extends State<Calculator> {
     }
   }
 
-  buttonPressed(String text, bool isClear) {
+  Widget _buttonPressed(String text, {bool isClear = false}) {
     setState(() {
       if (isClear) {
+        // Reset calculator
         equation = result = "0";
       } else if (text == "⌫") {
+        // Backspace
         equation = equation.substring(0, equation.length - 1);
-        if (equation == "") equation = result = "0";
+        if (equation == "") equation = result = "0"; // If all empty
       } else {
+        // Default
         if (equation == "0" && text != ".") equation = "";
         equation += text;
       }
 
+      // Only evaluate if correct expression
       if (!operatorsMap.containsKey(equation.substring(equation.length - 1)))
         evaluateEquation();
     });
   }
 
-  Widget button(text, Color color, double paddingBot) {
+  // Grid of buttons
+  Widget _buildButtons() {
+    return Material(
+      color: Color(0xFFF2F2F2),
+      child: GridView.count(
+          crossAxisCount: 4, // 4x4 grid
+          shrinkWrap: true,
+          physics: NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(8),
+          children: buttonNames.map<Widget>((e) {
+            switch (e) {
+              case "+": // Addition Button
+                return _buildFancyButton(e, isBottom: true);
+              case "×": // Multiplication Button
+                return _buildFancyButton(e);
+              case "−": // Subtraction Button
+                return _buildFancyButton(e);
+              case "÷": // Division Button
+                return _buildFancyButton(e, isTop: true);
+              default:
+                return _button(e, 0);
+            }
+          }).toList()),
+    );
+  }
+
+  // Normal button
+  Widget _button(text, double paddingBot) {
+    return Padding(
+      padding: const EdgeInsets.all(8),
+      child: Material(
+        borderRadius: BorderRadius.all(Radius.circular(100)), // Circular
+        color: Color.fromRGBO(230, 230, 230, 1),
+        child: CircleAvatar(
+          backgroundColor: Colors.transparent,
+          child: LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+            return InkWell(
+              // Ripple Effect
+              borderRadius: BorderRadius.all(Radius.circular(100)),
+              onTap: () {
+                _buttonPressed(text);
+              },
+              child: Container(
+                // For ripple area
+                width: constraints.maxWidth,
+                height: constraints.maxHeight,
+                alignment: Alignment.center,
+                child: Text(
+                  text,
+                  style: TextStyle(
+                    color: Color.fromRGBO(94, 94, 94, 1),
+                    fontSize: 30.0,
+                    fontWeight: FontWeight.w300,
+                  ),
+                ),
+              ),
+            );
+          }),
+        ),
+      ),
+    );
+  }
+
+  // Operator Button
+  Widget _buildFancyButton(text, {bool isTop = false, bool isBottom = false}) {
     return Container(
-      width: MediaQuery.of(context).size.height * 0.57 * 0.1925,
-      child: FlatButton(
-        color: color,
-        shape: CircleBorder(
-            side: BorderSide(
-                color: Color.fromRGBO(230, 230, 230, 1),
-                width: 1,
-                style: BorderStyle.solid)),
-        onPressed: () => buttonPressed(text, false),
-        child: Text(
-          text,
-          style: TextStyle(
-            color: Color.fromRGBO(94, 94, 94, 1),
-            fontSize: 40.0,
-            fontWeight: FontWeight.w300,
+      margin: EdgeInsets.fromLTRB(8, isTop ? 8 : 0, 8, isBottom ? 8 : 0),
+      child: Material(
+        color: Color.fromRGBO(237, 65, 53, 1),
+        borderRadius: BorderRadius.vertical(
+            top: isTop ? Radius.circular(100.0) : Radius.circular(0),
+            bottom: isBottom ? Radius.circular(100.0) : Radius.circular(0)),
+        child: InkWell(
+          borderRadius: BorderRadius.vertical(
+              top: isTop ? Radius.circular(100.0) : Radius.circular(0),
+              bottom: isBottom ? Radius.circular(100.0) : Radius.circular(0)),
+          onTap: () {
+            _buttonPressed(text);
+          },
+          child: Center(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: Color.fromRGBO(255, 211, 215, 1),
+                fontSize: 30.0,
+                fontWeight: FontWeight.w300,
+              ),
+            ),
           ),
         ),
-        padding:
-            EdgeInsets.all(MediaQuery.of(context).size.height * 0.57 * 0.04),
       ),
     );
   }
@@ -97,304 +205,89 @@ class CalculatorState extends State<Calculator> {
       resizeToAvoidBottomPadding: false,
       body: Column(
         children: <Widget>[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: <Widget>[
-              Container(
-                height: MediaQuery.of(context).size.height * 0.12,
-                alignment: Alignment.centerLeft,
-                padding: EdgeInsets.fromLTRB(22.5, 0, 5, 0),
-                child: Row(
-                  children: <Widget>[
-                    Text(equation,
-                        style: TextStyle(
-                            fontSize:
-                                (MediaQuery.of(context).size.height * 0.023) *
-                                    2,
-                            color: Color.fromRGBO(152, 152, 152, 1),
-                            fontWeight: FontWeight.bold)),
-                  ],
-                ),
-              ),
-              Container(
-                height: MediaQuery.of(context).size.height * 0.12,
-                padding: EdgeInsets.fromLTRB(5, 0, 22.5, 0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: <Widget>[
-                    GestureDetector(
-                      onTap: () => buttonPressed("×", true),
-                      child: Text(
-                        "×",
-                        style: TextStyle(
-                            fontSize:
-                                (MediaQuery.of(context).size.height * 0.03) * 2,
-                            color: Color.fromRGBO(200, 200, 200, 1),
-                            fontWeight: FontWeight.w300),
-                      ),
-                    )
-                  ],
-                ),
-              ),
-            ],
-          ),
-          Container(
-              margin: EdgeInsets.fromLTRB(
-                  MediaQuery.of(context).size.width * 0.04,
-                  0,
-                  MediaQuery.of(context).size.width * 0.04,
-                  0),
-              decoration: BoxDecoration(
-                  border: Border(
-                bottom: BorderSide(color: Color.fromRGBO(227, 227, 227, 1)),
-                left: BorderSide(color: Color.fromRGBO(227, 227, 227, 1)),
-              ))),
-          Container(
-              height: MediaQuery.of(context).size.height * 0.31,
-              alignment: Alignment.topLeft,
-              child: Container(
-                padding: EdgeInsets.fromLTRB(
-                    MediaQuery.of(context).size.width * 0.04,
-                    MediaQuery.of(context).size.height * 0.015,
-                    MediaQuery.of(context).size.width * 0.04,
-                    0),
-                child: Text(
-                  result,
-                  style: TextStyle(
-                      color: Color.fromRGBO(227, 227, 227, 1),
-                      fontSize:
-                          (((MediaQuery.of(context).size.height * 0.073) * 2) *
-                                  72) /
-                              96,
-                      fontWeight: FontWeight.w400,
-                      fontFamily: 'Chivo'),
-                ),
-              )),
           Expanded(
+            // Expression Area - Top - Smallest Size
+            flex: 1,
             child: Container(
-              color: Color.fromRGBO(241, 241, 241, 1),
+              margin: EdgeInsets.only(left: 12.5, right: 12.5),
+              decoration: BoxDecoration(
+                // Bottom Divider
+                border: Border(
+                  bottom: BorderSide(
+                    color: Color.fromRGBO(227, 227, 227, 1),
+                  ),
+                ),
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: <Widget>[
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      Container(
-                        height: MediaQuery.of(context).size.height * 0.55,
-                        margin: EdgeInsets.only(
-                            left: MediaQuery.of(context).size.width * 0.02),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: <Widget>[
-                            button("7", Color.fromRGBO(230, 230, 230, 1), 5),
-                            button("4", Color.fromRGBO(230, 230, 230, 1), 5),
-                            button("1", Color.fromRGBO(230, 230, 230, 1), 5),
-                            button("0", Color.fromRGBO(230, 230, 230, 1), 0),
-                          ],
-                        ),
-                      ),
-                    ],
+                  Container(
+                    // Expression
+                    alignment: Alignment.centerLeft,
+                    padding: EdgeInsets.fromLTRB(10, 0, 5, 0),
+                    child: Row(
+                      children: <Widget>[
+                        Text(equation,
+                            style: TextStyle(
+                                fontSize: 30,
+                                color: Color.fromRGBO(152, 152, 152, 1),
+                                fontWeight: FontWeight.bold)),
+                      ],
+                    ),
                   ),
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      Container(
-                        height: MediaQuery.of(context).size.height * 0.55,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: <Widget>[
-                            button("8", Color.fromRGBO(230, 230, 230, 1), 5),
-                            button("5", Color.fromRGBO(230, 230, 230, 1), 5),
-                            button("2", Color.fromRGBO(230, 230, 230, 1), 5),
-                            button(".", Color.fromRGBO(230, 230, 230, 1), 0),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      Container(
-                        height: MediaQuery.of(context).size.height * 0.55,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: <Widget>[
-                            button("9", Color.fromRGBO(230, 230, 230, 1), 5),
-                            button("6", Color.fromRGBO(230, 230, 230, 1), 5),
-                            button("3", Color.fromRGBO(230, 230, 230, 1), 5),
-                            Container(
-                              width: MediaQuery.of(context).size.height *
-                                  0.57 *
-                                  0.1925,
-                              child: FlatButton(
-                                color: Color.fromRGBO(230, 230, 230, 1),
-                                shape: CircleBorder(
-                                    side: BorderSide(
-                                        color: Color.fromRGBO(230, 230, 230, 1),
-                                        width: 1,
-                                        style: BorderStyle.solid)),
-                                onPressed: () => buttonPressed("⌫", false),
-                                child: Text(
-                                  "⌫",
-                                  style: TextStyle(
-                                    color: Color.fromRGBO(94, 94, 94, 1),
-                                    fontSize: 34.5,
-                                    fontWeight: FontWeight.w300,
-                                  ),
-                                ),
-                                padding: EdgeInsets.all(
-                                    MediaQuery.of(context).size.height *
-                                        0.57 *
-                                        0.04),
-                              ),
-                            )
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      Container(
-                        height: MediaQuery.of(context).size.height * 0.55,
-                        margin: EdgeInsets.only(
-                            right: MediaQuery.of(context).size.width * 0.02),
-                        decoration: new BoxDecoration(
-                            color: Color.fromRGBO(237, 65, 53, 1),
-                            borderRadius: BorderRadius.vertical(
-                                top: Radius.circular(100.0),
-                                bottom: Radius.circular(100.0))),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: <Widget>[
-                            Container(
-                              width: MediaQuery.of(context).size.height *
-                                  0.57 *
-                                  0.1925,
-                              child: FlatButton(
-                                color: Color.fromRGBO(237, 65, 53, 1),
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.vertical(
-                                        top: Radius.circular(100.0))),
-                                onPressed: () => buttonPressed("÷", false),
-                                child: Text(
-                                  "÷",
-                                  style: TextStyle(
-                                    color: Color.fromRGBO(255, 211, 215, 1),
-                                    fontSize: 40.0,
-                                    fontWeight: FontWeight.w300,
-                                  ),
-                                ),
-                                padding: EdgeInsets.only(
-                                    left: MediaQuery.of(context).size.height *
-                                        0.57 *
-                                        0.04,
-                                    bottom: MediaQuery.of(context).size.height *
-                                        0.57 *
-                                        0.04,
-                                    right: MediaQuery.of(context).size.height *
-                                        0.57 *
-                                        0.04,
-                                    top: MediaQuery.of(context).size.height *
-                                        0.57 *
-                                        0.03),
-                              ),
+                  Container(
+                    // Clear Btn
+                    padding: EdgeInsets.fromLTRB(10, 0, 0, 0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: <Widget>[
+                        InkWell(
+                          borderRadius: BorderRadius.circular(100.0),
+                          onTap: () => {_buttonPressed("×", isClear: true)},
+                          child: Container(
+                            alignment: Alignment.center,
+                            height: 45,
+                            width: 45,
+                            child: Text(
+                              "×",
+                              style: TextStyle(
+                                  fontSize: 36,
+                                  color: Color.fromRGBO(200, 200, 200, 1),
+                                  fontWeight: FontWeight.w300),
                             ),
-                            Container(
-                              width: MediaQuery.of(context).size.height *
-                                  0.57 *
-                                  0.1925,
-                              child: FlatButton(
-                                color: Color.fromRGBO(237, 65, 53, 1),
-                                onPressed: () => buttonPressed("×", false),
-                                child: Container(
-                                  child: Text(
-                                    "×",
-                                    style: TextStyle(
-                                      color: Color.fromRGBO(255, 211, 215, 1),
-                                      fontSize: 40.0,
-                                      fontWeight: FontWeight.w300,
-                                    ),
-                                  ),
-                                ),
-                                padding: EdgeInsets.all(
-                                    MediaQuery.of(context).size.height *
-                                        0.57 *
-                                        0.04),
-                              ),
-                            ),
-                            Container(
-                              width: MediaQuery.of(context).size.height *
-                                  0.57 *
-                                  0.1925,
-                              child: FlatButton(
-                                color: Color.fromRGBO(237, 65, 53, 1),
-                                onPressed: () => buttonPressed("−", false),
-                                child: Container(
-                                  child: Text(
-                                    "−",
-                                    style: TextStyle(
-                                      color: Color.fromRGBO(255, 211, 215, 1),
-                                      fontSize: 40.0,
-                                      fontWeight: FontWeight.w300,
-                                    ),
-                                  ),
-                                ),
-                                padding: EdgeInsets.all(
-                                    MediaQuery.of(context).size.height *
-                                        0.57 *
-                                        0.04),
-                              ),
-                            ),
-                            Container(
-                              padding: EdgeInsets.only(
-                                  bottom:
-                                      MediaQuery.of(context).size.width * 0.02),
-                              width: MediaQuery.of(context).size.height *
-                                  0.57 *
-                                  0.1925,
-                              child: FlatButton(
-                                color: Color.fromRGBO(237, 65, 53, 1),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.vertical(
-                                      bottom: Radius.circular(100.0)),
-                                ),
-                                onPressed: () => buttonPressed("+", false),
-                                child: Text(
-                                  "+",
-                                  style: TextStyle(
-                                    color: Color.fromRGBO(255, 211, 215, 1),
-                                    fontSize: 40.0,
-                                    fontWeight: FontWeight.w300,
-                                  ),
-                                ),
-                                padding: EdgeInsets.only(
-                                    left: MediaQuery.of(context).size.height *
-                                        0.57 *
-                                        0.04,
-                                    bottom: MediaQuery.of(context).size.height *
-                                        0.57 *
-                                        0.02,
-                                    right: MediaQuery.of(context).size.height *
-                                        0.57 *
-                                        0.04,
-                                    top: MediaQuery.of(context).size.height *
-                                        0.57 *
-                                        0.04),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                          ),
+                        )
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
+          ),
+          Expanded(
+            // Result Area - Mid - Medium Size Ratio
+            flex: 3,
+            child: Container(
+              alignment: Alignment.topLeft,
+              child: Container(
+                padding: EdgeInsets.fromLTRB(14, 8, 14, 0),
+                child: Text(
+                  result,
+                  style: TextStyle(
+                      color: Color.fromRGBO(227, 227, 227, 1),
+                      fontSize: 70,
+                      fontWeight: FontWeight.w400,
+                      fontFamily: 'Chivo'),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            // Controls Area - Bottom - Max Size Ration
+            flex: 5,
+            child: _buildButtons(),
           )
         ],
       ),
